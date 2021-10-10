@@ -194,52 +194,53 @@ class Board {
 	checkClue(clue, start, is_vertical) {
 		// this is probably a bit overcomplicated, but at least it should be
 		// fairly easy to extend
-		if(clue == "") return true;
+		if (clue == "") return true;
 		let len = is_vertical ? this.height : this.width;
 		let tokens = [];
 		let this_token = "";
 		let this_token_type = null;
-		for(let i = 0; i < len; i++) {
-			let cellx = is_vertical ? start : i;
-			let celly = is_vertical ? i : start;
-			let cell = cellx + this.width*celly;
-			if(this.board[cell].type == "number") {
-				if(!this.state[cell] || !this.state[cell].value) {
+		for (let i = 0; i < len; i++) {
+			let cellX = is_vertical ? start : i;
+			let cellY = is_vertical ? i : start;
+			let cell = cellX + this.width * cellY;
+			if (this.board[cell].type == "number") {
+				if (!this.state[cell] || !this.state[cell].value) {
 					// at least one number cell is empty - don't check the line sum yet
 					return true;
 				}
 				let val = this.state[cell].value;
-				if(this_token_type == "number") this_token += val;
+				if (this_token_type == "number") this_token += val;
 				else {
 					if(this_token_type) {
-						tokens.push({type: this_token_type, val: this_token});
+						tokens.push({ type: this_token_type, val: this_token });
 					}
 					this_token = ""+val;
 					this_token_type = "number";
 				}
-			} else if(this.board[cell].type == "separator") {
+			} else if (this.board[cell].type == "separator") {
 				let oper = this.board[cell].oper;
 				// ignore multiple of the same operator
-				if(this_token_type == "oper" && this_token == oper) continue;
-				else {
-					if(this_token_type) {
-						tokens.push({type: this_token_type, val: this_token});
+				if (this_token_type == "oper" && this_token == oper) {
+					continue;
+				} else {
+					if (this_token_type) {
+						tokens.push({ type: this_token_type, val: this_token });
 					}
 					this_token = oper;
 					this_token_type = "oper";
 				}
 			}
 		}
-		if(this_token_type) tokens.push({type: this_token_type, val: this_token});
+		if (this_token_type) tokens.push({ type: this_token_type, val: this_token });
 
 		// remove leading/trailing operators
-		while(tokens[0].type == "oper") tokens.shift();
-		while(tokens[tokens.length-1].type == "oper") tokens.pop();
+		while (tokens[0].type == "oper") tokens.shift();
+		while (tokens[tokens.length-1].type == "oper") tokens.pop();
 
 		let parse_muldiv = function(tokens) {
 			// this assumes the expression is well-formed
 			let prod = +tokens.shift().val;
-			while(tokens[0] && tokens[0].val == "mul") {
+			while (tokens[0] && tokens[0].val == "mul") {
 				tokens.shift();
 				prod = prod * (+tokens.shift().val);
 			}
@@ -247,7 +248,7 @@ class Board {
 		}
 		let parse_addsub = function(tokens) {
 			let sum = parse_muldiv(tokens);
-			while(tokens[0] && tokens[0].val == "add") {
+			while (tokens[0] && tokens[0].val == "add") {
 				tokens.shift();
 				sum += parse_muldiv(tokens);
 			}
@@ -256,7 +257,7 @@ class Board {
 		let sum = parse_addsub(tokens);
 
 		// XXX: this is special cased as the only non-exact clue
-		if(clue === "<10k") return sum < 10000;
+		if (clue === "<10k") return sum < 10000;
 		return +clue === sum;
 	}
 	drawGrid() {
