@@ -49,11 +49,13 @@ class Board {
 			} else if (c == '+') {
 				return {
 					type: "separator",
+					oper: "add",
 				};
 			} else if (c == '*') {
 				return {
 					type: "separator",
-					label: '×'
+					oper: "mul",
+					label: '×',
 				};
 			}
 		});
@@ -189,6 +191,74 @@ class Board {
 			}
 		}
 	}
+	checkClue(clue, start, is_vertical) {
+		// this is probably a bit overcomplicated, but at least it should be
+		// fairly easy to extend
+		if(clue == "") return true;
+		let len = is_vertical ? this.height : this.width;
+		let tokens = [];
+		let this_token = "";
+		let this_token_type = null;
+		for(let i = 0; i < len; i++) {
+			let cellx = is_vertical ? start : i;
+			let celly = is_vertical ? i : start;
+			let cell = cellx + this.width*celly;
+			if(this.board[cell].type == "number") {
+				if(!this.state[cell] || !this.state[cell].value) {
+					// at least one number cell is empty - don't check the line sum yet
+					return true;
+				}
+				let val = this.state[cell].value;
+				if(this_token_type == "number") this_token += val;
+				else {
+					if(this_token_type) {
+						tokens.push({type: this_token_type, val: this_token});
+					}
+					this_token = ""+val;
+					this_token_type = "number";
+				}
+			} else if(this.board[cell].type == "separator") {
+				let oper = this.board[cell].oper;
+				// ignore multiple of the same operator
+				if(this_token_type == "oper" && this_token == oper) continue;
+				else {
+					if(this_token_type) {
+						tokens.push({type: this_token_type, val: this_token});
+					}
+					this_token = oper;
+					this_token_type = "oper";
+				}
+			}
+		}
+		if(this_token_type) tokens.push({type: this_token_type, val: this_token});
+
+		// remove leading/trailing operators
+		while(tokens[0].type == "oper") tokens.shift();
+		while(tokens[tokens.length-1].type == "oper") tokens.pop();
+
+		let parse_muldiv = function(tokens) {
+			// this assumes the expression is well-formed
+			let prod = +tokens.shift().val;
+			while(tokens[0] && tokens[0].val == "mul") {
+				tokens.shift();
+				prod = prod * (+tokens.shift().val);
+			}
+			return prod;
+		}
+		let parse_addsub = function(tokens) {
+			let sum = parse_muldiv(tokens);
+			while(tokens[0] && tokens[0].val == "add") {
+				tokens.shift();
+				sum += parse_muldiv(tokens);
+			}
+			return sum;
+		}
+		let sum = parse_addsub(tokens);
+
+		// XXX: this is special cased as the only non-exact clue
+		if(clue === "<10k") return sum < 10000;
+		return +clue === sum;
+	}
 	drawGrid() {
 		ctx.clearRect(0,0,canvas.width,canvas.height);
 		ctx.strokeStyle = this.colors.fg;
@@ -217,12 +287,21 @@ class Board {
 		}
 		ctx.stroke();
 		ctx.font = "20px sans-serif";
-		ctx.fillStyle = this.colors.bg;
 		// Draw clues
 		for (let i in this.colClues) {
+			if(this.checkClue(this.colClues[i], +i, true)) {
+				ctx.fillStyle = this.colors.bg;
+			} else {
+				ctx.fillStyle = "#f30";
+			}
 			ctx.fillText(this.colClues[i], ox + i * c + c/2, oy - c/2, c);
 		}
 		for (let i in this.rowClues) {
+			if(this.checkClue(this.rowClues[i], +i, false)) {
+				ctx.fillStyle = this.colors.bg;
+			} else {
+				ctx.fillStyle = "#f30";
+			}
 			ctx.fillText(this.rowClues[i], ox - c/2, oy + i * c + c/2, c);
 		}
 	}
