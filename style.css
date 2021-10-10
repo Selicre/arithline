@@ -1,0 +1,21 @@
+:root {
+	--bg: #222;
+	--fg: #fff;
+	--accent: #fae;
+}
+
+body {
+	background-color: var(--bg);
+	color: var(--fg);
+	font-family: sans-serif;
+}
+
+canvas {
+	margin: 0 auto;
+	display: block;
+}
+
+#rules, #controls {
+	width: 720px;
+	margin: 0 auto;
+}

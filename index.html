@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<head>
+	<script async src="main.js"></script>
+	<link rel="stylesheet" href="style.css">
+</head>
+<canvas id="game" width="640" height="640"></canvas>
+<div id="controls">
+	<button onclick="game.resetState();game.drawGrid()">Reset</button>
+</div>
+<div id="rules">
+<h1>Arithline</h1>
+<p>Rules:</p>
+<ol>
+	<li>Rows and columns (lines) may not contain duplicate digits, or 0.</li>
+	<li>Consecutive numbers should be read as decimal numbers.</li>
+	<li>Filled cells represent separators, and may contain operation symbols.
+		<ul>
+			<li>The default operation is addition.</li>
+			<li>Precedence rules are respected, i.e. multiplication is always executed before addition.</li>
+			<li>Multiple separators are collapsed into one.</li>
+		</ul>
+	</li>
+	<li>Lines may be denoted by the result of the above operation.</li>
+<p>To input digits, use numeric keys 1-9. For pencil markings, use shift+[1-9].</p>
+</div>
+
