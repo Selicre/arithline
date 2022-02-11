@@ -35,6 +35,9 @@ class Board {
 		this.colors = {
 			bg: "#fff",
 			fg: "#000",
+			pencil: "#888",
+			pen: "#03f",
+			error: "#f30",
 		};
 	}
 	static fromText(s) {
@@ -50,6 +53,12 @@ class Board {
 				return {
 					type: "separator",
 					oper: "add",
+				};
+			} else if (c == '-') {
+				return {
+					type: "separator",
+					oper: "sub",
+					label: "-",
 				};
 			} else if (c == '*') {
 				return {
@@ -90,6 +99,19 @@ class Board {
 		if (this.hoveredX < 0 || this.hoveredX > this.width
 			|| this.hoveredY < 0 || this.hoveredY > this.height) { return null; }
 		return this.hoveredX + this.hoveredY * this.width;
+	}
+	updateNumber(num) {
+		let cell = this.hoveredCellId();
+		if (cell == null) return;
+		let state = this.state[cell];
+		if (num && document.getElementById("pencil").checked) {
+			state.pencil[num] = !state.pencil[num];
+		} else {
+			state.value = num;
+		}
+		game.markDuplicate();
+		game.saveState();
+		game.drawGrid();
 	}
 	updateInput(ev) {
 		let cell = this.hoveredCellId();
@@ -222,6 +244,13 @@ class Board {
 				// ignore multiple of the same operator
 				if (this_token_type == "oper" && this_token == oper) {
 					continue;
+				} else if (this_token_type == "oper") {
+				    // make sure other ops have precedence over +
+				    let last = tokens[tokens.length-1];
+				    if (last.val.oper == "add") {
+				        last.val = this_token;
+				    }
+				    this_token = oper;
 				} else {
 					if (this_token_type) {
 						tokens.push({ type: this_token_type, val: this_token });
@@ -248,16 +277,28 @@ class Board {
 		}
 		let parse_addsub = function(tokens) {
 			let sum = parse_muldiv(tokens);
-			while (tokens[0] && tokens[0].val == "add") {
+			while (
+				tokens[0] &&
+				(tokens[0].val == "add" || tokens[0].val == "sub")
+			) {
+				let is_sub = false;
+				if (tokens[0].val == "sub") {
+					is_sub |= true;
+				}
 				tokens.shift();
-				sum += parse_muldiv(tokens);
+				if (is_sub) {
+					sum -= parse_muldiv(tokens);
+				} else {
+					sum += parse_muldiv(tokens);
+				}
 			}
 			return sum;
 		}
 		let sum = parse_addsub(tokens);
 
-		// XXX: this is special cased as the only non-exact clue
+		// XXX: these are special cased as the only non-exact clues
 		if (clue === "<10k") return sum < 10000;
+		if (clue === ">500") return sum > 500;
 		return +clue === sum;
 	}
 	drawGrid() {
@@ -293,7 +334,7 @@ class Board {
 			if(this.checkClue(this.colClues[i], +i, true)) {
 				ctx.fillStyle = this.colors.bg;
 			} else {
-				ctx.fillStyle = "#f30";
+				ctx.fillStyle = this.colors.error;
 			}
 			ctx.fillText(this.colClues[i], ox + i * c + c/2, oy - c/2, c);
 		}
@@ -301,7 +342,7 @@ class Board {
 			if(this.checkClue(this.rowClues[i], +i, false)) {
 				ctx.fillStyle = this.colors.bg;
 			} else {
-				ctx.fillStyle = "#f30";
+				ctx.fillStyle = this.colors.error;
 			}
 			ctx.fillText(this.rowClues[i], ox - c/2, oy + i * c + c/2, c);
 		}
@@ -335,9 +376,9 @@ class Board {
 			if (state.value) {
 				ctx.save();
 				if (state.duplicate) {
-					ctx.fillStyle = "#f30";
+					ctx.fillStyle = this.colors.error;
 				} else {
-					ctx.fillStyle = "#03f";
+					ctx.fillStyle = this.colors.pen;
 				}
 				ctx.font = "35px sans-serif";
 				ctx.fillText(state.value, ox + i*c + c/2, oy + j*c + c/2 + 3.0, c);
@@ -346,7 +387,7 @@ class Board {
 				let str = "";
 				for (let i = 1; i <= 9; i++) { if (state.pencil[i]) { str += i; } }
 				ctx.save();
-				ctx.fillStyle = "#888";
+				ctx.fillStyle = this.colors.pencil;
 				ctx.font = "20px sans-serif";
 				ctx.fillText(str, ox + i*c + c/2, oy + j*c + c/2 + 3.0, c);
 				ctx.restore();
@@ -354,9 +395,9 @@ class Board {
 		}
 	}
 }
-
-/*
-let game = Board.fromText(`
+let game;
+if (location.hash == "#1") {
+game = Board.fromText(`
 ...++..
 +....*.
 .+++..+
@@ -364,12 +405,21 @@ let game = Board.fromText(`
 ....+..
 +...++.
 ...+...`);
-*/
-
-//game.rowClues = ["329", "9516", "", "1806", "4820", "178", "581"];
-//game.colClues = ["597", "", "5721", "", "982", "1937", "1317"];
-
-let game = Board.fromText(`
+	game.rowClues = ["329", "9516", "", "1806", "4820", "178", "581"];
+	game.colClues = ["597", "", "5721", "", "982", "1937", "1317"];
+} else if (location.hash == "#2") {
+game = Board.fromText(`
+...+...
+.+.....
+..+.++.
++....++
+..++...
+.+.....
+..+...+`);
+	game.rowClues = ["1369", "", "30", "4356", "438", "", "937"];
+	game.colClues = ["1553", "855", "28", "464", "6393", "841", "761"];
+} else if (location.hash == "#3") {
+game = Board.fromText(`
 .+...+.
 ..*...+
 +..+...
@@ -377,8 +427,33 @@ let game = Board.fromText(`
 .+..+..
 ...+...
 +.++..+`);
-game.rowClues = ["492", "<10k", "368", "85", "67", "431", "45"];
-game.colClues = ["843", "569", "53", "174", "537", "476", "55"];
+	game.rowClues = ["492", "<10k", "368", "85", "67", "431", "45"];
+	game.colClues = ["843", "569", "53", "174", "537", "476", "55"];
+} else if (location.hash == "#4") {
+game = Board.fromText(`
+...+...
+..+..++
++++.+*.
+.......
+.+.*..+
++.+..+.
+...+...`);
+	game.rowClues = ["416", "95", "", "", ">500", "56", "765"];
+    game.colClues = ["56", "84", "34", "3460", "", "332", "63"];
+} else {
+game = Board.fromText(`
+..+...+..
+.........
+..*.++...
++...+...+
+.+.-..+..
+.++.+++..
+++....+..
+....+...*
+..+...+..`);
+	game.rowClues = ["641","","1035","1493","41","","4844","3317","212"];
+	game.colClues = ["397","1314","515","518","","1100","","","3099"];
+}
 game.drawGrid();
 window.game = game;
 

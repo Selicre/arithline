@@ -1,7 +1,9 @@
 :root {
 	--bg: #222;
 	--fg: #fff;
-	--accent: #fae;
+	--accent: #aef;
+	--dim: #333;
+	--dim-active: #444;
 }
 
 body {
@@ -18,4 +20,19 @@ canvas {
 #rules, #controls {
 	width: 720px;
 	margin: 0 auto;
+}
+
+button {
+	transition: background 100ms ease;
+	background: var(--bg);
+	border: 1px solid var(--accent);
+	color: var(--fg);
+	padding: 5px 10px;
+	font-size: 30px;
+}
+button:hover {
+	background: var(--dim);
+}
+button:active {
+	background: var(--dim-active);
 }

@@ -5,7 +5,18 @@
 </head>
 <canvas id="game" width="640" height="640"></canvas>
 <div id="controls">
-	<button onclick="game.resetState();game.drawGrid()">Reset</button>
+	<button onclick="if (confirm('Do you really want to restart?')) { game.resetState(); game.saveState(); game.drawGrid() }">Reset</button>
+	<button onclick="game.updateNumber(1)">1</button>
+	<button onclick="game.updateNumber(2)">2</button>
+	<button onclick="game.updateNumber(3)">3</button>
+	<button onclick="game.updateNumber(4)">4</button>
+	<button onclick="game.updateNumber(5)">5</button>
+	<button onclick="game.updateNumber(6)">6</button>
+	<button onclick="game.updateNumber(7)">7</button>
+	<button onclick="game.updateNumber(8)">8</button>
+	<button onclick="game.updateNumber(9)">9</button>
+	<button onclick="game.updateNumber(null)">Clear</button>
+	<input id="pencil" type="checkbox"></input><label for="pencil">Pencil</label>
 </div>
 <div id="rules">
 <h1>Arithline</h1>
